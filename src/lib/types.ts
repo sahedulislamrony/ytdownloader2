@@ -39,7 +39,7 @@ export interface DownloadItem {
 
 export interface AppSettings {
   defaultDownloadPath: string;
-  theme: 'Light' | 'Dark' | 'System';
+  theme: 'light' | 'dark' | 'system';
   maxConcurrentDownloads: number;
   showNotifications: boolean;
   ytDlpPath: string;

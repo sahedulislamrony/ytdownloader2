@@ -7,8 +7,6 @@ import type { VideoInfo } from '@/lib/types';
 
 const execFileAsync = promisify(execFile);
 
-const YTDLP_PATH = process.env.YTDLP_PATH || 'yt-dlp';
-
 // This schema is a subset of the yt-dlp JSON output
 const YtDlpFormatSchema = z.object({
     format_id: z.string(),
@@ -30,7 +28,8 @@ const YtDlpVideoInfoSchema = z.object({
     formats: z.array(YtDlpFormatSchema)
 });
 
-export async function fetchVideoInfo(url: string): Promise<VideoInfo> {
+export async function fetchVideoInfo(url: string, ytDlpPath?: string): Promise<VideoInfo> {
+    const YTDLP_PATH = ytDlpPath || process.env.YTDLP_PATH || 'yt-dlp';
     try {
         const { stdout } = await execFileAsync(YTDLP_PATH, [
             '--dump-json',
@@ -62,7 +61,7 @@ export async function fetchVideoInfo(url: string): Promise<VideoInfo> {
     } catch (error: any) {
         console.error('Error fetching video info with yt-dlp:', error);
         if (error.code === 'ENOENT') {
-            throw new Error('yt-dlp not found. Please ensure it is installed and in your system PATH.');
+            throw new Error('yt-dlp not found. Please ensure it is installed, in your system PATH, or that the path in settings is correct.');
         }
         throw new Error('Failed to fetch video information. The URL might be invalid, or the video is private or region-locked.');
     }

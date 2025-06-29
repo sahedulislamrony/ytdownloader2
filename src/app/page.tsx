@@ -20,11 +20,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { type VideoInfo } from '@/lib/types';
+import { type VideoInfo, type AppSettings } from '@/lib/types';
 import { suggestBestDownloadOption } from '@/ai/flows/suggest-best-download-option';
 import VideoPreview from '@/components/video-preview';
 import DownloadOptionsDialog from '@/components/download-options-dialog';
 import { fetchVideoInfo } from '@/app/actions';
+import useLocalStorage from '@/hooks/use-local-storage';
 
 const formSchema = z.object({
   url: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -33,6 +34,14 @@ const formSchema = z.object({
   }),
 });
 
+const defaultSettings: AppSettings = {
+  theme: 'dark',
+  defaultDownloadPath: '/home/user/downloads',
+  maxConcurrentDownloads: 3,
+  showNotifications: true,
+  ytDlpPath: '',
+}
+
 export default function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +49,7 @@ export default function Home() {
   const [suggestedFormat, setSuggestedFormat] = useState<string | null>(null);
   const [suggestionReason, setSuggestionReason] = useState<string | null>(null);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const [settings] = useLocalStorage<AppSettings>('app-settings', defaultSettings);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,7 +79,7 @@ export default function Home() {
     setSuggestionReason(null);
 
     try {
-      const info = await fetchVideoInfo(values.url);
+      const info = await fetchVideoInfo(values.url, settings.ytDlpPath);
       setVideoInfo(info);
       
       if (info.availableFormats && info.availableFormats.length > 0) {
