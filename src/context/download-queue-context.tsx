@@ -11,8 +11,10 @@ interface DownloadQueueContextType {
   addDownload: (newDownload: { videoInfo: VideoInfo; format: FormatInfo }) => void;
   updateDownloadStatus: (id: string, status: 'Paused' | 'InProgress') => void;
   removeDownload: (id: string) => void;
+  retryDownload: (id: string) => void;
   history: DownloadItem[];
   clearHistory: () => void;
+  clearCompleted: () => void;
 }
 
 const DownloadQueueContext = createContext<DownloadQueueContextType | undefined>(undefined);
@@ -56,10 +58,11 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
                 progress: 100, 
                 completedAt: new Date(), 
                 fileName: result.fileName,
-                downloadedSize: itemToDownload.fileSize // Set to full size on completion
+                downloadedSize: itemToDownload.fileSize
             };
+            setDownloads(prev => prev.map(d => d.id === itemToDownload.id ? completedItem : d));
             setHistory(prev => [completedItem, ...prev]);
-            setDownloads(prev => prev.filter(d => d.id !== itemToDownload.id));
+
             if(settings.showNotifications) {
                 toast({
                   title: "Download Complete",
@@ -74,7 +77,7 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
                  progress: 0,
                  completedAt: new Date(), 
             };
-            setDownloads(prev => prev.filter(d => d.id !== itemToDownload.id));
+            setDownloads(prev => prev.map(d => d.id === itemToDownload.id ? failedItem : d));
             setHistory(prev => [failedItem, ...prev]);
             
             if(settings.showNotifications) {
@@ -95,10 +98,12 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
       setDownloads(prevDownloads =>
         prevDownloads.map(item => {
           if (item.status === 'InProgress') {
-            const newProgress = Math.min(item.progress + (Math.random() * 5), 99);
+            // Slower progress for larger files to make it feel more real
+            const increment = item.fileSize > 50 * 1024 * 1024 ? Math.random() * 2 : Math.random() * 5;
+            const newProgress = Math.min(item.progress + increment, 99);
             const downloadedSize = (item.fileSize * newProgress) / 100;
             const speed = (Math.random() * 2.5 + 0.5).toFixed(2);
-            const etaSeconds = (100 - newProgress) / 5;
+            const etaSeconds = (100 - newProgress) / (increment * 1.5);
             const eta = new Date(etaSeconds * 1000).toISOString().substr(14, 5);
             return { ...item, progress: newProgress, downloadedSize: Math.round(downloadedSize), speed, eta };
           }
@@ -144,12 +149,35 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
   const removeDownload = (id: string) => {
     setDownloads(prev => prev.filter(item => item.id !== id));
   };
-  
+
+  const retryDownload = (id: string) => {
+    setDownloads(prev =>
+      prev.map(item => {
+          if (item.id === id && item.status === 'Failed') {
+              return { 
+                ...item,
+                status: 'Pending',
+                progress: 0,
+                downloadedSize: 0,
+                startedAt: new Date(),
+                completedAt: null,
+                errorMessage: undefined,
+              };
+          }
+          return item;
+      })
+    );
+  };
+
   const clearHistory = () => {
     setHistory([]);
   };
 
-  const value = { downloads, addDownload, updateDownloadStatus, removeDownload, history, clearHistory };
+  const clearCompleted = () => {
+    setDownloads(prev => prev.filter(d => d.status !== 'Completed' && d.status !== 'Failed'));
+  };
+
+  const value = { downloads, addDownload, updateDownloadStatus, removeDownload, retryDownload, history, clearHistory, clearCompleted };
 
   return (
     <DownloadQueueContext.Provider value={value}>

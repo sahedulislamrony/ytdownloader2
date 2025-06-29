@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Pause, Play, X, RefreshCw } from "lucide-react"
+import { Pause, Play, X, RefreshCw, Download } from "lucide-react"
 import { type VariantProps } from "class-variance-authority"
 
 import { type DownloadItem as DownloadItemType, type DownloadStatus } from "@/lib/types"
@@ -36,7 +36,7 @@ const getStatusBadgeVariant = (status: DownloadStatus): BadgeVariant => {
 
 
 export default function DownloadItem({ item }: DownloadItemProps) {
-  const { updateDownloadStatus, removeDownload } = useDownloadQueue()
+  const { updateDownloadStatus, removeDownload, retryDownload } = useDownloadQueue()
 
   const handlePause = () => {
     updateDownloadStatus(item.id, 'Paused');
@@ -51,9 +51,7 @@ export default function DownloadItem({ item }: DownloadItemProps) {
   };
 
   const handleRetry = () => {
-    // This would reset progress and set status to Pending/InProgress
-    console.log("Retrying download:", item.id);
-    updateDownloadStatus(item.id, 'InProgress');
+    retryDownload(item.id);
   };
 
   const formatBytes = (bytes: number, decimals = 2) => {
@@ -122,6 +120,13 @@ export default function DownloadItem({ item }: DownloadItemProps) {
               <RefreshCw className="h-4 w-4" />
             </Button>
           )}
+          {item.status === 'Completed' && item.fileName && (
+             <Button variant="ghost" size="icon" asChild>
+               <a href={`/api/download?file=${encodeURIComponent(item.fileName)}`} download>
+                  <Download className="h-4 w-4" />
+               </a>
+             </Button>
+           )}
         </div>
       </CardContent>
     </Card>

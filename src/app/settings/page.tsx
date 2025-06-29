@@ -142,7 +142,7 @@ export default function SettingsPage() {
                 )}
               />
                <FormDescription>
-                 Files are saved to a `downloads` folder in the project directory.
+                 Files are first saved to a `downloads` folder in the project directory. You can then download them to your computer from the History or Downloads pages.
                </FormDescription>
             </CardContent>
           </Card>
