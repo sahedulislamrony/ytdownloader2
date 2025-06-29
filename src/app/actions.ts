@@ -4,6 +4,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { z } from 'zod';
 import type { VideoInfo } from '@/lib/types';
+import path from 'path';
 
 const execFileAsync = promisify(execFile);
 
@@ -65,4 +66,42 @@ export async function fetchVideoInfo(url: string, ytDlpPath?: string): Promise<V
         }
         throw new Error('Failed to fetch video information. The URL might be invalid, or the video is private or region-locked.');
     }
+}
+
+export async function downloadVideo(input: {
+  url: string;
+  formatId: string;
+  downloadPath: string;
+  ytDlpPath?: string;
+}): Promise<{ success: boolean; filePath?: string; error?: string }> {
+  const { url, formatId, downloadPath, ytDlpPath } = input;
+  const YTDLP_PATH = ytDlpPath || process.env.YTDLP_PATH || 'yt-dlp';
+  const outputPathTemplate = path.join(downloadPath, '%(title)s.%(ext)s');
+
+  try {
+    const { stdout } = await execFileAsync(YTDLP_PATH, [
+      '-f',
+      formatId,
+      '-o',
+      outputPathTemplate,
+      '--print',
+      'filename',
+      '--no-warnings',
+      url,
+    ]);
+
+    const filePath = stdout.trim();
+    if (!filePath) {
+      throw new Error("yt-dlp did not return a filename. The download may have failed silently.");
+    }
+    
+    return { success: true, filePath };
+  } catch (error: any) {
+    console.error('Error downloading video with yt-dlp:', error);
+    if (error.code === 'ENOENT') {
+      return { success: false, error: 'yt-dlp not found. Please ensure it is installed, in your system PATH, or that the path in settings is correct.' };
+    }
+    const errorMessage = error.stderr || error.message || 'Failed to download video.';
+    return { success: false, error: errorMessage };
+  }
 }

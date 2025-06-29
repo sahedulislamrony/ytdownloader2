@@ -35,6 +35,11 @@ export interface DownloadItem {
   speed: string; // e.g., "1.2 MB/s"
   eta: string; // e.g., "2m 15s"
   errorMessage?: string;
+
+  // Added for download action
+  webpageUrl: string;
+  formatId: string;
+  filePath?: string; // Where the file was saved
 }
 
 export interface AppSettings {
