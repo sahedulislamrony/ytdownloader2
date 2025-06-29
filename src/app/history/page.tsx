@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { DownloadCloud, CheckCircle, XCircle, HardDrive, RefreshCw } from 'lucide-react';
+import { DownloadCloud, CheckCircle, XCircle, HardDrive, RefreshCw, Download } from 'lucide-react';
 import { useDownloadQueue } from '@/context/download-queue-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,7 +23,7 @@ export default function HistoryPage() {
   const totalSize = history.reduce((acc, item) => acc + (item.fileSize || 0), 0);
 
   const formatBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes || bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -101,9 +101,18 @@ export default function HistoryPage() {
                     <TableCell>{item.completedAt ? new Date(item.completedAt).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell className="text-right">{formatBytes(item.fileSize)}</TableCell>
                     <TableCell className="text-right">
-                       <Button variant="ghost" size="icon">
-                          <RefreshCw className="h-4 w-4" />
-                       </Button>
+                       {item.status === 'Completed' && item.fileName && (
+                         <Button variant="ghost" size="icon" asChild>
+                           <a href={`/api/download?file=${encodeURIComponent(item.fileName)}`} download>
+                              <Download className="h-4 w-4" />
+                           </a>
+                         </Button>
+                       )}
+                       {item.status === 'Failed' && (
+                         <Button variant="ghost" size="icon" disabled>
+                            <RefreshCw className="h-4 w-4" />
+                         </Button>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))

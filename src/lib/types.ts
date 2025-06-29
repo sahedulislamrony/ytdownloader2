@@ -39,11 +39,10 @@ export interface DownloadItem {
   // Added for download action
   webpageUrl: string;
   formatId: string;
-  filePath?: string; // Where the file was saved
+  fileName?: string; // The name of the saved file
 }
 
 export interface AppSettings {
-  defaultDownloadPath: string;
   theme: 'light' | 'dark' | 'system';
   maxConcurrentDownloads: number;
   showNotifications: boolean;

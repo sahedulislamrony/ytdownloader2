@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import { z } from 'zod';
 import type { VideoInfo } from '@/lib/types';
 import path from 'path';
+import fs from 'fs';
 
 const execFileAsync = promisify(execFile);
 
@@ -71,11 +72,15 @@ export async function fetchVideoInfo(url: string, ytDlpPath?: string): Promise<V
 export async function downloadVideo(input: {
   url: string;
   formatId: string;
-  downloadPath: string;
   ytDlpPath?: string;
-}): Promise<{ success: boolean; filePath?: string; error?: string }> {
-  const { url, formatId, downloadPath, ytDlpPath } = input;
+}): Promise<{ success: boolean; fileName?: string; error?: string }> {
+  const { url, formatId, ytDlpPath } = input;
   const YTDLP_PATH = ytDlpPath || process.env.YTDLP_PATH || 'yt-dlp';
+  
+  // Use a dedicated, non-configurable downloads directory for security
+  const downloadPath = path.resolve(process.cwd(), 'downloads');
+  fs.mkdirSync(downloadPath, { recursive: true });
+
   const outputPathTemplate = path.join(downloadPath, '%(title)s.%(ext)s');
 
   try {
@@ -95,7 +100,7 @@ export async function downloadVideo(input: {
       throw new Error("yt-dlp did not return a filename. The download may have failed silently.");
     }
     
-    return { success: true, filePath };
+    return { success: true, fileName: path.basename(filePath) };
   } catch (error: any) {
     console.error('Error downloading video with yt-dlp:', error);
     if (error.code === 'ENOENT') {

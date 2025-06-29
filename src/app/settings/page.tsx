@@ -31,7 +31,6 @@ import { Separator } from '@/components/ui/separator';
 
 const settingsSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']),
-  defaultDownloadPath: z.string().min(1, 'Path is required'),
   maxConcurrentDownloads: z.number().min(1).max(5),
   showNotifications: z.boolean(),
   ytDlpPath: z.string().optional(),
@@ -42,7 +41,6 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 export default function SettingsPage() {
   const [settings, setSettings] = useLocalStorage<SettingsFormValues>('app-settings', {
     theme: 'dark',
-    defaultDownloadPath: '/home/user/downloads',
     maxConcurrentDownloads: 3,
     showNotifications: true,
     ytDlpPath: '',
@@ -129,22 +127,6 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="defaultDownloadPath"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Download Path</FormLabel>
-                    <FormControl>
-                      <Input placeholder="/path/to/your/downloads" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      The default folder where files will be saved.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="maxConcurrentDownloads"
                 render={({ field }) => (
                   <FormItem>
@@ -159,6 +141,9 @@ export default function SettingsPage() {
                   </FormItem>
                 )}
               />
+               <FormDescription>
+                 Files are saved to a `downloads` folder in the project directory.
+               </FormDescription>
             </CardContent>
           </Card>
           
@@ -206,10 +191,10 @@ export default function SettingsPage() {
                         <FormItem>
                         <FormLabel>yt-dlp Path (Optional)</FormLabel>
                         <FormControl>
-                            <Input placeholder="Leave empty to use bundled version" {...field} />
+                            <Input placeholder="Leave empty to use system PATH" {...field} />
                         </FormControl>
                         <FormDescription>
-                            Specify a custom path to your yt-dlp executable.
+                            Specify a custom path to your yt-dlp executable if it's not in your PATH.
                         </FormDescription>
                         <FormMessage />
                         </FormItem>

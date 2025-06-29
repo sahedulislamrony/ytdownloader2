@@ -17,9 +17,8 @@ interface DownloadQueueContextType {
 
 const DownloadQueueContext = createContext<DownloadQueueContextType | undefined>(undefined);
 
-const defaultSettings: AppSettings = {
+const defaultSettings: Omit<AppSettings, 'defaultDownloadPath'> = {
   theme: 'dark',
-  defaultDownloadPath: '/home/user/downloads',
   maxConcurrentDownloads: 3,
   showNotifications: true,
   ytDlpPath: '',
@@ -28,7 +27,7 @@ const defaultSettings: AppSettings = {
 export function DownloadQueueProvider({ children }: { children: ReactNode }) {
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
   const [history, setHistory] = useLocalStorage<DownloadItem[]>('downloadHistory', []);
-  const [settings] = useLocalStorage<AppSettings>('app-settings', defaultSettings);
+  const [settings] = useLocalStorage<AppSettings>('app-settings', defaultSettings as AppSettings);
   const { toast } = useToast();
 
   // Manage queue and trigger downloads
@@ -48,7 +47,6 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
       downloadVideo({
         url: itemToDownload.webpageUrl,
         formatId: itemToDownload.formatId,
-        downloadPath: settings.defaultDownloadPath,
         ytDlpPath: settings.ytDlpPath,
       }).then(result => {
         if (result.success) {
@@ -57,10 +55,10 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
                 status: 'Completed' as const, 
                 progress: 100, 
                 completedAt: new Date(), 
-                filePath: result.filePath,
+                fileName: result.fileName,
                 downloadedSize: itemToDownload.fileSize // Set to full size on completion
             };
-            setHistory(prev => [...prev, completedItem]);
+            setHistory(prev => [completedItem, ...prev]);
             setDownloads(prev => prev.filter(d => d.id !== itemToDownload.id));
             if(settings.showNotifications) {
                 toast({
@@ -69,13 +67,16 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
                 });
             }
         } else {
-            setDownloads(prev =>
-                prev.map(d =>
-                d.id === itemToDownload.id
-                    ? { ...d, status: 'Failed', errorMessage: result.error, progress: 0 }
-                    : d
-                )
-            );
+            const failedItem = {
+                 ...itemToDownload, 
+                 status: 'Failed' as const, 
+                 errorMessage: result.error, 
+                 progress: 0,
+                 completedAt: new Date(), 
+            };
+            setDownloads(prev => prev.filter(d => d.id !== itemToDownload.id));
+            setHistory(prev => [failedItem, ...prev]);
+            
             if(settings.showNotifications) {
                 toast({
                     variant: 'destructive',
@@ -86,7 +87,7 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
         }
       });
     }
-  }, [downloads, settings.maxConcurrentDownloads, settings.defaultDownloadPath, settings.ytDlpPath, setHistory, toast, settings.showNotifications]);
+  }, [downloads, settings.maxConcurrentDownloads, settings.ytDlpPath, setHistory, toast, settings.showNotifications]);
 
   // Simulate progress for InProgress items
   useEffect(() => {
@@ -130,11 +131,9 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateDownloadStatus = (id: string, status: 'Paused' | 'InProgress') => {
-    // Note: This pause is cosmetic and only stops the progress bar simulation.
-    // The actual download process with yt-dlp continues in the background on the server.
     setDownloads(prev =>
       prev.map(item => {
-          if (item.id === id && item.status !== 'Pending') {
+          if (item.id === id && (item.status === 'InProgress' || item.status === 'Paused')) {
               return { ...item, status };
           }
           return item;
@@ -143,7 +142,6 @@ export function DownloadQueueProvider({ children }: { children: ReactNode }) {
   };
   
   const removeDownload = (id: string) => {
-    // Note: This does not cancel the actual download process on the server if it has started.
     setDownloads(prev => prev.filter(item => item.id !== id));
   };
   
