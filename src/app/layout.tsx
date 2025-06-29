@@ -36,7 +36,7 @@ export default function RootLayout({
             <AppSidebar />
             <SidebarInset className="flex flex-col">
               <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
-                <SidebarTrigger className="md:hidden" />
+                <SidebarTrigger />
                 <h1 className="text-xl font-semibold font-headline">Avalonia Download Studio</h1>
               </header>
               <main className="flex-1 overflow-auto p-4 sm:p-6">
