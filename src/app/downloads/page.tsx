@@ -45,7 +45,7 @@ export default function DownloadsPage() {
       <Tabs defaultValue="in-progress">
         <TabsList className="grid w-full grid-cols-2 md:w-auto md:grid-cols-2">
           <TabsTrigger value="in-progress">In Progress ({inProgress.length})</TabsTrigger>
-          <TabsTrigger value="pending" disabled>Pending ({pending.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="in-progress" className="mt-6">
           {renderDownloadList(inProgress)}

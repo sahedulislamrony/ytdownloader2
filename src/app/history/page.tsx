@@ -94,7 +94,7 @@ export default function HistoryPage() {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.title}</TableCell>
                     <TableCell>
-                      <Badge variant={item.status === 'Completed' ? 'default' : 'destructive'} className={item.status === 'Completed' ? 'bg-green-600' : ''}>
+                      <Badge variant={item.status === 'Completed' ? 'success' : 'destructive'}>
                         {item.status}
                       </Badge>
                     </TableCell>

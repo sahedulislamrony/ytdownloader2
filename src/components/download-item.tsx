@@ -2,25 +2,38 @@
 
 import Image from "next/image"
 import { Pause, Play, X, RefreshCw } from "lucide-react"
+import { type VariantProps } from "class-variance-authority"
 
-import { type DownloadItem as DownloadItemType } from "@/lib/types"
+import { type DownloadItem as DownloadItemType, type DownloadStatus } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Badge, badgeVariants } from "@/components/ui/badge"
 import { useDownloadQueue } from "@/context/download-queue-context"
 
 interface DownloadItemProps {
   item: DownloadItemType
 }
 
-const statusColors: { [key: string]: string } = {
-  InProgress: "bg-blue-500",
-  Paused: "bg-yellow-500",
-  Completed: "bg-green-500",
-  Failed: "bg-red-500",
-  Pending: "bg-gray-500",
-}
+type BadgeVariant = VariantProps<typeof badgeVariants>["variant"];
+
+const getStatusBadgeVariant = (status: DownloadStatus): BadgeVariant => {
+  switch (status) {
+    case 'Completed':
+      return 'success';
+    case 'Failed':
+      return 'destructive';
+    case 'Paused':
+      return 'warning';
+    case 'InProgress':
+      return 'default';
+    case 'Pending':
+      return 'secondary';
+    default:
+      return 'secondary';
+  }
+};
+
 
 export default function DownloadItem({ item }: DownloadItemProps) {
   const { updateDownloadStatus, removeDownload } = useDownloadQueue()
@@ -69,7 +82,7 @@ export default function DownloadItem({ item }: DownloadItemProps) {
           <h3 className="font-semibold line-clamp-2">{item.title}</h3>
           
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className={statusColors[item.status]}>{item.status}</Badge>
+            <Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge>
             <p className="text-sm text-muted-foreground">{formatBytes(item.downloadedSize)} / {formatBytes(item.fileSize)}</p>
           </div>
 
