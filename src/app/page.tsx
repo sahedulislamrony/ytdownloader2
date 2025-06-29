@@ -20,11 +20,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { type VideoInfo, type FormatInfo } from '@/lib/types';
-import { mockFetchVideoInfo } from '@/lib/mock-data';
+import { type VideoInfo } from '@/lib/types';
 import { suggestBestDownloadOption } from '@/ai/flows/suggest-best-download-option';
 import VideoPreview from '@/components/video-preview';
 import DownloadOptionsDialog from '@/components/download-options-dialog';
+import { fetchVideoInfo } from '@/app/actions';
 
 const formSchema = z.object({
   url: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -65,27 +65,46 @@ export default function Home() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setVideoInfo(null);
+    setSuggestedFormat(null);
+    setSuggestionReason(null);
+
     try {
-      const info = await mockFetchVideoInfo(values.url);
+      const info = await fetchVideoInfo(values.url);
       setVideoInfo(info);
       
-      const formatsString = info.availableFormats
-        .map(f => `ID: ${f.format_id}, Res: ${f.resolution}, Ext: ${f.ext}, Size: ${f.filesize}, Codec: ${f.vcodec}/${f.acodec}`)
-        .join('\n');
+      if (info.availableFormats && info.availableFormats.length > 0) {
+        const formatsString = info.availableFormats
+          .map(f => {
+            const parts = [`ID: ${f.format_id}`];
+            if (f.resolution) parts.push(`Res: ${f.resolution}`);
+            else parts.push('Audio Only');
+            if (f.ext) parts.push(`Ext: ${f.ext}`);
+            if (f.filesize) parts.push(`Size: ${(f.filesize / 1024 / 1024).toFixed(2)}MB`);
+            const codecs = [f.vcodec, f.acodec].filter(c => c && c !== 'none').join(', ');
+            if (codecs) parts.push(`Codecs: ${codecs}`);
+            return parts.join('; ');
+          })
+          .join('\n');
 
-      const suggestion = await suggestBestDownloadOption({
-        formats: formatsString,
-        videoTitle: info.title,
-      });
+        try {
+          const suggestion = await suggestBestDownloadOption({
+            formats: formatsString,
+            videoTitle: info.title,
+          });
 
-      setSuggestedFormat(suggestion.suggestedFormat);
-      setSuggestionReason(suggestion.reason);
+          setSuggestedFormat(suggestion.suggestedFormat);
+          setSuggestionReason(suggestion.reason);
+        } catch (aiError) {
+            console.warn("AI suggestion failed:", aiError);
+            // This is not a critical error, so we don't show a toast to the user.
+        }
+      }
       
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to fetch video information.',
+        title: 'Error Fetching Video',
+        description: error instanceof Error ? error.message : 'An unknown error occurred.',
       });
     } finally {
       setIsLoading(false);
@@ -141,15 +160,15 @@ export default function Home() {
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
-                            <RadioGroupItem value="playlist" />
+                            <RadioGroupItem value="playlist" disabled />
                           </FormControl>
-                          <FormLabel className="font-normal">Playlist</FormLabel>
+                          <FormLabel className="font-normal opacity-50">Playlist (soon)</FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
-                            <RadioGroupItem value="channel" />
+                            <RadioGroupItem value="channel" disabled />
                           </FormControl>
-                          <FormLabel className="font-normal">Channel</FormLabel>
+                          <FormLabel className="font-normal opacity-50">Channel (soon)</FormLabel>
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
