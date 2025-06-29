@@ -21,7 +21,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { type VideoInfo, type AppSettings } from '@/lib/types';
-import { suggestBestDownloadOption } from '@/ai/flows/suggest-best-download-option';
 import VideoPreview from '@/components/video-preview';
 import DownloadOptionsDialog from '@/components/download-options-dialog';
 import { fetchVideoInfo } from '@/app/actions';
@@ -46,8 +45,6 @@ export default function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
-  const [suggestedFormat, setSuggestedFormat] = useState<string | null>(null);
-  const [suggestionReason, setSuggestionReason] = useState<string | null>(null);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [settings] = useLocalStorage<AppSettings>('app-settings', defaultSettings);
 
@@ -75,40 +72,10 @@ export default function Home() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setVideoInfo(null);
-    setSuggestedFormat(null);
-    setSuggestionReason(null);
 
     try {
       const info = await fetchVideoInfo(values.url, settings.ytDlpPath);
       setVideoInfo(info);
-      
-      if (info.availableFormats && info.availableFormats.length > 0) {
-        const formatsString = info.availableFormats
-          .map(f => {
-            const parts = [`ID: ${f.format_id}`];
-            if (f.resolution) parts.push(`Res: ${f.resolution}`);
-            else parts.push('Audio Only');
-            if (f.ext) parts.push(`Ext: ${f.ext}`);
-            if (f.filesize) parts.push(`Size: ${(f.filesize / 1024 / 1024).toFixed(2)}MB`);
-            const codecs = [f.vcodec, f.acodec].filter(c => c && c !== 'none').join(', ');
-            if (codecs) parts.push(`Codecs: ${codecs}`);
-            return parts.join('; ');
-          })
-          .join('\n');
-
-        try {
-          const suggestion = await suggestBestDownloadOption({
-            formats: formatsString,
-            videoTitle: info.title,
-          });
-
-          setSuggestedFormat(suggestion.suggestedFormat);
-          setSuggestionReason(suggestion.reason);
-        } catch (aiError) {
-            console.warn("AI suggestion failed:", aiError);
-            // This is not a critical error, so we don't show a toast to the user.
-        }
-      }
       
     } catch (error) {
       toast({
@@ -226,8 +193,6 @@ export default function Home() {
           isOpen={isOptionsOpen}
           onClose={() => setIsOptionsOpen(false)}
           videoInfo={videoInfo}
-          suggestedFormat={suggestedFormat}
-          suggestionReason={suggestionReason}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { Home, Download, History, Settings, Bot } from "lucide-react"
+import { Home, Download, History, Settings, DownloadCloud } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -30,14 +30,14 @@ export function AppSidebar() {
           size="lg"
           className="justify-center group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12"
           tooltip={{
-            children: "Avalonia Studio",
+            children: "Avalonia Download Studio",
             side: "right",
             align: "center",
           }}
         >
           <a href="#">
-            <Bot className="text-primary size-6 group-data-[collapsible=icon]:size-6" />
-            <span className="text-lg font-headline">Avalonia Studio</span>
+            <DownloadCloud className="text-primary size-6 group-data-[collapsible=icon]:size-6" />
+            <span className="text-lg font-headline">Avalonia Download Studio</span>
           </a>
         </SidebarMenuButton>
       </SidebarHeader>

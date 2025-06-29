@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Info, Music, Video } from 'lucide-react';
+import { Music, Video } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,28 +9,22 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { type VideoInfo, type FormatInfo } from '@/lib/types';
 import { useDownloadQueue } from '@/context/download-queue-context';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 interface DownloadOptionsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   videoInfo: VideoInfo;
-  suggestedFormat: string | null;
-  suggestionReason: string | null;
 }
 
 export default function DownloadOptionsDialog({
   isOpen,
   onClose,
   videoInfo,
-  suggestedFormat,
-  suggestionReason,
 }: DownloadOptionsDialogProps) {
   const { addDownload } = useDownloadQueue();
   const { toast } = useToast();
@@ -61,13 +55,9 @@ export default function DownloadOptionsDialog({
   };
 
   const FormatItem = ({ format }: { format: FormatInfo }) => {
-    const isSuggested = suggestedFormat === format.format_id;
     return (
       <Card
-        className={cn(
-          "mb-2 cursor-pointer transition-all hover:shadow-md",
-          isSuggested && "border-primary ring-2 ring-primary"
-        )}
+        className="mb-2 cursor-pointer transition-all hover:shadow-md hover:border-primary"
         onClick={() => handleDownload(format)}
       >
         <CardContent className="p-3">
@@ -83,7 +73,6 @@ export default function DownloadOptionsDialog({
                 {format.filesize ? ` - ${formatBytes(format.filesize)}` : ''}
               </p>
             </div>
-            {isSuggested && <CheckCircle className="h-5 w-5 text-primary" />}
           </div>
         </CardContent>
       </Card>
@@ -99,15 +88,6 @@ export default function DownloadOptionsDialog({
             Select a format to begin the download.
           </DialogDescription>
         </DialogHeader>
-        {suggestionReason && (
-          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-blue-800 dark:text-blue-300">AI Suggestion</p>
-              <p className="text-sm text-blue-700 dark:text-blue-400">{suggestionReason}</p>
-            </div>
-          </div>
-        )}
         <Tabs defaultValue="video" className="mt-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="video"><Video className="mr-2 h-4 w-4" />Video</TabsTrigger>
